@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RVEY.DEV | Digital Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --accent: #6366f1;
+            --bg-base: #030303;
+            --text-main: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.02);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --noise-opacity: 0.15;
+        }
+
+        .light-mode {
+            --bg-base: #f4f4f5;
+            --text-main: #09090b;
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+            --noise-opacity: 0.4;
+        }
+
+        /* --- BASE STYLES & RESET --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            width: 100%;
+            overflow-x: hidden;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        /* --- THE GRAIN OVERLAY --- */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: var(--noise-opacity);
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        /* --- LIQUID GLASS --- */
+        .liquid-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px) saturate(150%);
+            -webkit-backdrop-filter: blur(24px) saturate(150%);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            transition: background 0.5s ease, border 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        /* --- TYPOGRAPHY --- */
+        .title-font { font-family: 'Space Grotesk', sans-serif; }
+        
+        .hero-title {
+            background: linear-gradient(135deg, var(--text-main) 20%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 0.85;
+        }
+
+        /* --- PC SPECIFIC INTERACTIONS --- */
+        @media (pointer: fine) {
+            html, body { cursor: none; }
+            
+            #custom-cursor {
+                position: fixed; width: 6px; height: 6px;
+                background: var(--text-main); border-radius: 50%;
+                pointer-events: none; z-index: 10000;
+                mix-blend-mode: difference;
+                transition: transform 0.1s ease;
+            }
+            
+            #cursor-follower {
+                position: fixed; width: 40px; height: 40px;
+                border: 1px solid var(--text-main); border-radius: 50%;
+                pointer-events: none; z-index: 9999;
+                opacity: 0.3; mix-blend-mode: difference;
+                transition: transform 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+            }
+
+            .project-card-container { perspective: 1500px; }
+            .project-card {
+                transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+                transform-style: preserve-3d;
+            }
+            .magnetic-wrap { display: inline-block; }
+            .magnetic-element { transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1); }
+        }
+
+        /* --- MOBILE SPECIFIC FIXES --- */
+        @media (pointer: coarse), (max-width: 768px) {
+            #custom-cursor, #cursor-follower, #mouse-glow { display: none !important; }
+            .liquid-glass { backdrop-filter: blur(12px) saturate(150%); -webkit-backdrop-filter: blur(12px) saturate(150%); }
+            .aurora { filter: blur(80px); opacity: 0.4 !important; }
+            .hover-scale { transform: none !important; }
+        }
+
+        /* --- SCROLL REVEAL ANIMATIONS --- */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- MARQUEE --- */
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .marquee-content { display: inline-block; animation: marquee 30s linear infinite; }
+
+        /* --- BACKGROUND LIGHTS --- */
+        .aurora {
+            position: fixed; pointer-events: none; z-index: 0;
+            filter: blur(120px); transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+
+    <!-- PC Custom Cursors -->
+    <div id="custom-cursor"></div>
+    <div id="cursor-follower"></div>
+
+    <!-- Background Lights -->
+    <div class="aurora w-[90vw] h-[90vw] md:w-[60vw] md:h-[60vw] bg-indigo-600/10 rounded-full top-[-10%] left-[-10%] opacity-60"></div>
+    <div class="aurora w-[80vw] h-[80vw] md:w-[50vw] md:h-[50vw] bg-purple-600/10 rounded-full bottom-[-10%] right-[-10%] opacity-40"></div>
+
+    <!-- --- NAVIGATION DOCK --- -->
+    <nav class="fixed w-full z-[100] bottom-6 md:bottom-8 flex justify-center px-4">
+        <div id="nav-dock" class="liquid-glass px-4 md:px-6 py-3 md:py-3.5 rounded-full flex items-center gap-2 md:gap-4 shadow-2xl transition-all duration-300">
+            <div class="flex items-center gap-4 md:gap-8 px-2 md:px-4 border-r border-current border-opacity-10">
+                <a href="#work" class="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] opacity-70 hover:opacity-100 transition-opacity">Work</a>
+                <a href="#about" class="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] opacity-70 hover:opacity-100 transition-opacity">About</a>
+                <a href="#contact" class="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] opacity-70 hover:opacity-100 transition-opacity">Contact</a>
+            </div>
+            <div class="flex items-center gap-1 md:gap-3 pl-2">
+                <button id="theme-toggle" class="p-2 md:p-2.5 rounded-full hover:bg-current hover:bg-opacity-10 transition-colors" aria-label="Toggle Theme">
+                    <i data-lucide="moon" id="moon-icon" class="w-4 h-4 md:w-4 md:h-4"></i>
+                    <i data-lucide="sun" id="sun-icon" class="w-4 h-4 md:w-4 md:h-4 hidden"></i>
+                </button>
+                <div class="hidden md:block text-[9px] font-bold px-3 py-1.5 bg-indigo-500 bg-opacity-20 text-indigo-500 rounded-md tracking-widest">V4.0</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- --- MARQUEE --- -->
+    <div class="fixed top-0 w-full z-[80] py-2 md:py-3 liquid-glass !border-x-0 !border-t-0 !rounded-none overflow-hidden">
+        <div class="marquee-content text-[8px] md:text-[9px] font-bold uppercase tracking-[0.3em] md:tracking-[0.5em] opacity-50 whitespace-nowrap">
+            <span>AVAILABLE FOR FREELANCE &bull; DIGITAL CRAFT &bull; AGADIR MOROCCO &bull; 2026 COLLABORATION &bull; HIGH PERFORMANCE UI &bull; </span>
+            <span>AVAILABLE FOR FREELANCE &bull; DIGITAL CRAFT &bull; AGADIR MOROCCO &bull; 2026 COLLABORATION &bull; HIGH PERFORMANCE UI &bull; </span>
+        </div>
+    </div>
+
+    <!-- --- HERO SECTION --- -->
+    <header class="relative z-10 pt-36 md:pt-48 pb-16 md:pb-32 px-6 max-w-7xl mx-auto flex flex-col items-center text-center min-h-[90vh] justify-center reveal">
+        <div class="liquid-glass inline-flex items-center gap-3 px-5 py-2 rounded-full mb-8 md:mb-12">
+            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.5)]"></div>
+            <span class="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em]">System Active</span>
+        </div>
+        
+        <h1 class="text-[18vw] md:text-[11rem] font-black tracking-tighter mb-8 md:mb-12 hero-title title-font italic pr-2">
+            RVEY.<span class="not-italic font-light opacity-100">DEV</span>
+        </h1>
+
+        <div class="grid md:grid-cols-12 gap-6 w-full max-w-5xl text-left">
+            <div class="md:col-span-8 flex flex-col justify-center">
+                <p class="text-xl md:text-3xl font-light leading-relaxed mb-8 opacity-80 max-w-2xl">
+                    Crafting <span class="font-medium italic underline decoration-indigo-500/30 underline-offset-4">digital matter</span> through high-performance code, fluid motion, and refractive aesthetics.
+                </p>
+                <div class="flex gap-4">
+                    <a href="#work" class="group flex items-center gap-2 bg-indigo-600 text-white px-6 py-4 md:px-8 md:py-4 rounded-2xl font-bold text-xs md:text-sm hover:bg-indigo-500 transition-colors">
+                        EXPLORE WORKS <i data-lucide="arrow-right" class="w-4 h-4 transition-transform group-hover:translate-x-1"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="md:col-span-4 grid grid-cols-2 md:grid-cols-1 gap-4">
+                <div class="liquid-glass p-6 md:p-8 rounded-[2rem] flex flex-col justify-between hover:border-indigo-500/30 transition-colors group">
+                    <i data-lucide="zap" class="text-indigo-400 w-5 h-5 md:w-6 md:h-6 mb-4 md:mb-8 group-hover:scale-110 transition-transform"></i>
+                    <h3 class="text-sm md:text-lg font-bold tracking-tight">Rapid <br class="hidden md:block"/>Deployment</h3>
+                </div>
+                <div class="liquid-glass p-6 md:p-8 rounded-[2rem] flex flex-col justify-between hover:border-indigo-500/30 transition-colors group">
+                    <i data-lucide="layers" class="text-indigo-400 w-5 h-5 md:w-6 md:h-6 mb-4 md:mb-8 group-hover:scale-110 transition-transform"></i>
+                    <h3 class="text-sm md:text-lg font-bold tracking-tight">Adaptive <br class="hidden md:block"/>Architecture</h3>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- --- WORKS SECTION --- -->
+    <section id="work" class="relative z-10 py-20 md:py-32 px-6 max-w-7xl mx-auto overflow-hidden">
+        <div class="flex items-center gap-4 mb-12 md:mb-20 reveal">
+            <div class="w-12 md:w-16 h-[1px] bg-indigo-500"></div>
+            <h2 class="text-sm md:text-lg font-bold tracking-[0.4em] uppercase opacity-70">The Archive</h2>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-10 md:gap-16">
+            <!-- Project 1 -->
+            <div class="project-card-container reveal">
+                <a href="https://rvey11.github.io/KataiSushi/" target="_blank" class="project-card block liquid-glass p-3 md:p-5 rounded-[2.5rem] md:rounded-[3.5rem] group relative">
+                    <!-- Subtle Hover Glow -->
+                    <div class="absolute inset-0 bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-3xl rounded-[3.5rem] -z-10"></div>
+                    
+                    <div class="relative aspect-[4/3] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden mb-6 md:mb-8 bg-neutral-900 shadow-lg">
+                        <img src="3374e554-83fb-46af-b6b7-13691a8065a0.jpg" alt="Katai Sushi" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                            <div class="bg-white/10 backdrop-blur-md p-4 rounded-full border border-white/20">
+                                <i data-lucide="external-link" class="text-white w-6 h-6"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-4 md:px-6 pb-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-3xl md:text-4xl font-black title-font tracking-tighter">KATAI</h3>
+                            <span class="text-[9px] font-bold border border-current opacity-50 px-3 py-1 rounded-full uppercase">Fine Dining</span>
+                        </div>
+                        <p class="text-sm md:text-base opacity-60 font-medium leading-relaxed italic">High-end luxury gastronomy interface.</p>
+                    </div>
+                </a>
+            </div>
+
+            <div class="project-card-container reveal" style="transition-delay: 0.2s;">
+    <a href="https://rvey11.github.io/Rashfat-Coffee/" target="_blank" class="project-card block liquid-glass p-3 md:p-5 rounded-[2.5rem] md:rounded-[3.5rem] group relative">
+        <div class="absolute inset-0 bg-amber-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-3xl rounded-[3.5rem] -z-10"></div>
+        
+        <div class="relative aspect-[4/3] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden mb-6 md:mb-8 bg-neutral-900 shadow-lg">
+            <img src="rashfat-thumbnail.jpg" alt="Rashfat Coffee" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy">
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <div class="bg-white/10 backdrop-blur-md p-4 rounded-full border border-white/20">
+                    <i data-lucide="external-link" class="text-white w-6 h-6"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-4 md:px-6 pb-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-3xl md:text-4xl font-black title-font tracking-tighter">RASHFAT</h3>
+                <span class="text-[9px] font-bold border border-current opacity-50 px-3 py-1 rounded-full uppercase">Artisanal Coffee</span>
+            </div>
+            <p class="text-sm md:text-base opacity-60 font-medium leading-relaxed italic">Premium coffee culture and roasting experience.</p>
+        </div>
+    </a>
+</div>
+            <!-- Project 2 -->
+            <div class="project-card-container reveal" style="transition-delay: 0.1s;">
+                <a href="https://rvey11.github.io/The-Blacksmith" target="_blank" class="project-card block liquid-glass p-3 md:p-5 rounded-[2.5rem] md:rounded-[3.5rem] group relative md:mt-24">
+                    <!-- Subtle Hover Glow -->
+                    <div class="absolute inset-0 bg-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-3xl rounded-[3.5rem] -z-10"></div>
+                    
+                    <div class="relative aspect-[4/3] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden mb-6 md:mb-8 bg-neutral-900 shadow-lg">
+                        <img src="8bfbe506-ce07-4350-9390-d4559f3594d4.jpg" alt="The Blacksmith" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                            <div class="bg-white/10 backdrop-blur-md p-4 rounded-full border border-white/20">
+                                <i data-lucide="external-link" class="text-white w-6 h-6"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-4 md:px-6 pb-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-3xl md:text-4xl font-black title-font tracking-tighter">FORGE</h3>
+                            <span class="text-[9px] font-bold border border-current opacity-50 px-3 py-1 rounded-full uppercase">Industrial</span>
+                        </div>
+                        <p class="text-sm md:text-base opacity-60 font-medium leading-relaxed italic">Atmospheric hospitality & commerce branding.</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- --- ABOUT SECTION --- -->
+    <section id="about" class="relative z-10 py-20 md:py-32 px-6 max-w-7xl mx-auto">
+        <div class="grid lg:grid-cols-3 gap-6 md:gap-8">
+            <div class="lg:col-span-2 liquid-glass p-8 md:p-14 rounded-[2.5rem] md:rounded-[3.5rem] flex flex-col justify-end min-h-[300px] md:min-h-[400px] relative overflow-hidden group reveal">
+                <h3 class="text-4xl md:text-6xl font-black title-font tracking-tighter mb-4 md:mb-6 leading-none">Code <span class="text-indigo-500">&</span> Canvas.</h3>
+                <p class="text-lg md:text-2xl font-light opacity-70 leading-relaxed max-w-2xl">
+                    Bridging the gap between artistic vision and technical execution. I build digital assets optimized for the modern web.
+                </p>
+            </div>
+            
+            <div class="flex flex-col gap-6 md:gap-8 reveal" style="transition-delay: 0.1s;">
+                <div class="flex-1 liquid-glass rounded-[2.5rem] md:rounded-[3.5rem] p-8 flex flex-col justify-center items-center text-center">
+                    <div class="text-[9px] font-bold uppercase tracking-[0.4em] opacity-50 mb-2">Experience</div>
+                    <div class="text-5xl md:text-6xl font-black title-font tracking-tighter">05<span class="text-indigo-500">+</span></div>
+                    <div class="text-[9px] font-bold opacity-40 mt-2">YEARS ACTIVE</div>
+                </div>
+                <div class="flex-1 liquid-glass rounded-[2.5rem] md:rounded-[3.5rem] p-8 flex flex-col justify-center items-center text-center">
+                    <div class="text-[9px] font-bold uppercase tracking-[0.4em] opacity-50 mb-2">Location</div>
+                    <div class="text-2xl md:text-3xl font-black title-font tracking-tighter text-indigo-400 uppercase">Agadir</div>
+                    <div class="text-[9px] font-bold opacity-40 mt-2">MOROCCO</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- --- CONTACT SECTION --- -->
+    <footer id="contact" class="relative z-10 pt-20 md:pt-40 pb-24 md:pb-32 px-6 text-center overflow-hidden">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-[12vw] font-black title-font tracking-tighter leading-none mb-12 opacity-5 italic select-none reveal">GET IN TOUCH</h2>
+            
+            <div class="flex flex-col items-center reveal">
+                <a href="mailto:bouderka295@gmail.com" class="group relative inline-block mb-16 md:mb-24 px-2">
+                    <span class="text-2xl sm:text-4xl md:text-6xl lg:text-7xl font-black title-font tracking-tighter relative z-10 block group-hover:text-indigo-500 transition-colors py-2 break-all md:break-normal">
+                        bouderka295@gmail.com
+                    </span>
+                    <div class="absolute bottom-0 left-0 w-full h-1 md:h-2 bg-indigo-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+                </a>
+                
+                <div class="flex flex-wrap justify-center gap-4 md:gap-8 mb-16 md:mb-24">
+                    <!-- Magnetic wrappers for PC -->
+                    <div class="magnetic-wrap">
+    <a href="https://www.instagram.com/notrvey/" class="magnetic-element liquid-glass w-14 h-14 md:w-20 md:h-20 rounded-2xl md:rounded-[2rem] flex items-center justify-center hover:bg-gradient-to-tr hover:from-[#f9ce34] hover:via-[#ee2a7b] hover:to-[#6228d7] hover:text-white transition-all duration-300" title="Instagram">
+        <i class="fa-brands fa-instagram"></i>
+    </a>
+</div>
+
+                <div class="text-[9px] font-bold uppercase tracking-[0.4em] md:tracking-[0.6em] opacity-30 flex flex-col md:flex-row items-center gap-2 md:gap-4">
+                    <span>RVEY</span>
+                    <span class="hidden md:block">&bull;</span>
+                    <span>EST 2026</span>
+                    <span class="hidden md:block">&bull;</span>
+                    <span>MOROCCO</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 1. Initialize Icons safely
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+
+        // 2. Custom Cursor & Followers (PC Only)
+        const isFinePointer = window.matchMedia("(pointer: fine)").matches;
+        
+        if (isFinePointer) {
+            const cursor = document.getElementById('custom-cursor');
+            const follower = document.getElementById('cursor-follower');
+            
+            let mouseX = -100, mouseY = -100;
+            let followerX = -100, followerY = -100;
+
+            window.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX; mouseY = e.clientY;
+                cursor.style.transform = `translate3d(${mouseX - 3}px, ${mouseY - 3}px, 0)`;
+            });
+
+            function render() {
+                followerX += (mouseX - followerX) * 0.2;
+                followerY += (mouseY - followerY) * 0.2;
+                follower.style.transform = `translate3d(${followerX - 20}px, ${followerY - 20}px, 0)`;
+                requestAnimationFrame(render);
+            }
+            requestAnimationFrame(render);
+
+            // Magnetic Buttons in Footer
+            const magneticElements = document.querySelectorAll('.magnetic-wrap');
+            magneticElements.forEach((wrap) => {
+                const el = wrap.querySelector('.magnetic-element');
+                wrap.addEventListener('mousemove', (e) => {
+                    const rect = wrap.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    el.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+                });
+                wrap.addEventListener('mouseleave', () => {
+                    el.style.transform = `translate(0px, 0px)`;
+                });
+            });
+
+            // 3D Card Tilt
+            const cards = document.querySelectorAll('.project-card');
+            cards.forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+                    const centerX = rect.width / 2; const centerY = rect.height / 2;
+                    const rotateX = ((y - centerY) / 20) * -1;
+                    const rotateY = (x - centerX) / 20;
+                    card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                });
+            });
+        }
+
+        // 3. Flawless Theme Toggle
+        const themeBtn = document.getElementById('theme-toggle');
+        const moonIcon = document.getElementById('moon-icon');
+        const sunIcon = document.getElementById('sun-icon');
+        let isDark = true;
+
+        themeBtn.addEventListener('click', () => {
+            isDark = !isDark;
+            document.body.classList.toggle('light-mode');
+            
+            if(isDark) {
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+            } else {
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+            }
+        });
+
+        // 4. Scroll Reveal Engine
+        const revealElements = document.querySelectorAll('.reveal');
+        
+        const revealCallback = (entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    // Optional: stop observing once revealed
+                    // observer.unobserve(entry.target); 
+                }
+            });
+        };
+
+        const revealOptions = {
+            threshold: 0.15, // Trigger when 15% visible
+            rootMargin: "0px 0px -50px 0px"
+        };
+
+        const revealObserver = new IntersectionObserver(revealCallback, revealOptions);
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // 5. Nav Dock Hide/Show logic
+        const dock = document.getElementById('nav-dock');
+        let lastScrollY = window.scrollY;
+
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+            
+            // Shrink dock when scrolling down, expand when at top
+            if (currentScrollY > 50) {
+                dock.style.transform = 'scale(0.95)';
+            } else {
+                dock.style.transform = 'scale(1)';
+            }
+            
+            lastScrollY = currentScrollY;
+        }, { passive: true });
+        
+        // Trigger initial reveal check
+        setTimeout(() => {
+            document.querySelectorAll('.reveal').forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if(rect.top < window.innerHeight) {
+                    el.classList.add('active');
+                }
+            });
+        }, 100);
+
+    </script>
+</body>
+</html>
